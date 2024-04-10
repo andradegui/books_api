@@ -17,7 +17,7 @@ class BookController extends AbstractController
     public function index(BookRepository $bookRepository): JsonResponse
     {
         return $this->json([
-            'livro' => $bookRepository->findAll(),
+            'book' => $bookRepository->findAll(),
         ]);
     }
 
@@ -31,14 +31,23 @@ class BookController extends AbstractController
         }
 
         return $this->json([
-            'livro' => $book,
+            'book' => $book,
         ]);
     }
 
     #[Route('/books', name: 'books_create', methods: ['POST'])]
     public function create(Request $request, BookRepository $bookRepository): JsonResponse
     {
-        $data = $request->request->all();
+        if( $request->headers->get('Content-Type') == 'application/json' ){
+
+            $data = $request->toArray();
+
+        }else{  
+
+            $data = $request->request->all();
+
+        }
+
 
         $book = new Book();
         $book->setTitle($data['title']);
@@ -50,7 +59,7 @@ class BookController extends AbstractController
 
         return $this->json([
             'message' => 'Cadastro de livro realizado c/ sucesso!',
-            'livro' => $book,
+            'book' => $book,
         ], 201);
     }
 
@@ -73,7 +82,23 @@ class BookController extends AbstractController
 
         return $this->json([
             'message' => 'Atualização de livro realizado c/ sucesso!',
-            'livro' => $book,
+            'book' => $book,
         ], 201);
     }
+
+    #[Route('/books/{book}', name: 'books_delete', methods: ['DELETE'])]
+    public function delete(int $book, Request $request, BookRepository $bookRepository): JsonResponse
+    {
+        $book = $bookRepository->find($book);
+
+        // $bookName = $book->getTitle();
+
+        $bookRepository->remove($book, true);
+
+        return $this->json([
+            'message' => 'Livro deletado c/ sucesso!',
+            'book_deleted' => $book
+        ]);
+    }
+
 }
