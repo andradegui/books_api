@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Book;
 use App\Repository\BookRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,10 +15,19 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 class BookController extends AbstractController
 {
     #[Route('/books', name: 'books_list', methods: ['GET'])]
-    public function index(BookRepository $bookRepository): JsonResponse
+    public function index(BookRepository $bookRepository, EntityManagerInterface $entityManager): JsonResponse
     {
+        // Obtém uma instância do QueryBuilder
+        $queryBuilder = $entityManager->createQueryBuilder();
+
+        // Define a query para selecionar todos os livros ordenados pelo ID ASC
+        $queryBuilder->select('b')->from('App\Entity\Book', 'b')->orderBy('b.id', 'ASC');
+
+        // Executa a query
+        $books = $queryBuilder->getQuery()->getResult();
+
         return $this->json([
-            'book' => $bookRepository->findAll(),
+            'book' => $books,
         ]);
     }
 
@@ -38,6 +48,7 @@ class BookController extends AbstractController
     #[Route('/books', name: 'books_create', methods: ['POST'])]
     public function create(Request $request, BookRepository $bookRepository): JsonResponse
     {
+        // Configuração p/ receber JSON
         if( $request->headers->get('Content-Type') == 'application/json' ){
 
             $data = $request->toArray();
@@ -47,7 +58,6 @@ class BookController extends AbstractController
             $data = $request->request->all();
 
         }
-
 
         $book = new Book();
         $book->setTitle($data['title']);
@@ -72,7 +82,16 @@ class BookController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $data = $request->request->all();
+        // Configuração p/ receber JSON
+        if( $request->headers->get('Content-Type') == 'application/json' ){
+
+            $data = $request->toArray();
+
+        }else{  
+
+            $data = $request->request->all();
+
+        }
 
         $book->setTitle($data['title']);
         $book->setIsbn($data['isbn']);
