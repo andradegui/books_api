@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Book;
 use App\Repository\BookRepository;
+use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -17,6 +18,20 @@ class BookController extends AbstractController
     {
         return $this->json([
             'livro' => $bookRepository->findAll(),
+        ]);
+    }
+
+    #[Route('/books/{book}', name: 'books_single', methods: ['GET'])]
+    public function single(int $book, BookRepository $bookRepository): JsonResponse
+    {
+        $book = $bookRepository->find($book);
+
+        if( !$book ){
+            throw $this->createNotFoundException();
+        }
+
+        return $this->json([
+            'livro' => $book,
         ]);
     }
 
@@ -35,6 +50,29 @@ class BookController extends AbstractController
 
         return $this->json([
             'message' => 'Cadastro de livro realizado c/ sucesso!',
+            'livro' => $book,
+        ], 201);
+    }
+
+    #[Route('/books/{book}', name: 'books_update', methods: ['PUT', 'PATCH'])]
+    public function update(int $book, Request $request, ManagerRegistry $doctrine, BookRepository $bookRepository): JsonResponse
+    {
+        $book = $bookRepository->find($book);
+
+        if( !$book ){
+            throw $this->createNotFoundException();
+        }
+
+        $data = $request->request->all();
+
+        $book->setTitle($data['title']);
+        $book->setIsbn($data['isbn']);
+        $book->setUpdatedAt(new \DateTimeImmutable('now', new \DateTimeZone('America/Sao_Paulo')));
+
+        $doctrine->getManager()->flush();
+
+        return $this->json([
+            'message' => 'Atualização de livro realizado c/ sucesso!',
             'livro' => $book,
         ], 201);
     }
